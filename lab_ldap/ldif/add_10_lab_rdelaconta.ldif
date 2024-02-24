@@ -1,0 +1,14 @@
+dn: cn=Robert de Laconta,ou=people,dc=planetexpress,dc=com
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+cn: Robert de Laconta
+sn: de Laconta
+givenName: Robert
+description: Employee
+mail: youremail@yourdomain.com
+ou: People
+uid: robert
+userPassword:: e3NzaGF9M3UzcUdCSmFMc2tiUEg0OVJrYlFtUk9HTktFb1lOUXZkU2lOZmc9P
+ Q==

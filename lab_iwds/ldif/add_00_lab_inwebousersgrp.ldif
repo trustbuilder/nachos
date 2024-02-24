@@ -1,0 +1,5 @@
+dn: cn=inWebo Users,ou=people,dc=planetexpress,dc=com
+objectclass: Group
+objectclass: top
+groupType: 2147483650
+cn: inWebo Users

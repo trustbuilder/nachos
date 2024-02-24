@@ -1,0 +1,207 @@
+####################################################################################
+# docker-compose file for TrustBuilder MFA Training Labs
+#
+# What does this file do?
+#
+# Using docker-compose it will:
+#
+# - create a network 'guacamole_network' with the 'bridge' driver.
+# - create a service 'guacd' from 'guacamole/guacd' connected to 'guacamole_network'
+# - create a service 'postgres' from 'postgres' connected to 'guacamole_network'
+# - create a service 'guacamole' from 'guacamole/guacamole/' conn. to 'guacamole_network'
+# - create a service 'nginx' from 'nginx' connected to 'guacamole_network'
+# - create a service 'ldap' from 'rroemhild/test-openldap' connected to 'guacamole_network'
+# - create a service 'ldapproxy' from Dockerfile connected to 'guacamole_network'
+#
+#
+# !!!!! FOR INITAL SETUP (after git clone) run ./prepare.sh once
+#
+# !!!!! FOR A FULL RESET (WILL ERASE YOUR DATABASE, YOUR FILES, YOUR RECORDS AND CERTS) DO A
+# !!!!!  ./reset.sh
+#
+#
+# The initial login to the guacamole webinterface is:
+#
+#     Username: guacadmin
+#     Password: guacadmin
+#
+#####################################################################################
+
+version: '2.0'
+
+# networks
+# create a network 'guacamole_network' in mode 'bridged'
+networks:
+  guacamole_network:
+    driver: bridge
+    enable_ipv6: false
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.99.1.0/24
+
+# services
+services:
+
+#----------------------------------------      
+# guacamole daemon (guacd)
+#----------------------------------------      
+  guacd:
+    container_name: guacd
+    image: guacamole/guacd:1.5.4
+    networks:
+      guacamole_network:
+    restart: always
+    volumes:
+    - ./drive:/drive:rw
+    - ./record:/record:rw
+
+#----------------------------------------      
+# postgres
+#----------------------------------------      
+  postgres:
+    container_name: postgres
+    environment:
+      TZ: Europe/Paris
+      PGDATA: /var/lib/postgresql/data/guacamole
+      POSTGRES_DB: guacamole_db
+      POSTGRES_PASSWORD: 'ChooseYourOwnPasswordHere1234'
+      POSTGRES_USER: guacamole_user
+    image: postgres:15.2-alpine
+    networks:
+      guacamole_network:
+    restart: always
+    volumes:
+    - ./init:/docker-entrypoint-initdb.d:z
+    - ./data:/var/lib/postgresql/data:Z
+    ports:
+    - 5432:5432
+
+#----------------------------------------      
+# nginx
+#----------------------------------------      
+  nginx:
+   container_name: nginx
+   restart: always
+   image: nginx
+   volumes:
+   - ./nginx/templates:/etc/nginx/templates:ro
+   - ./nginx/ssl/self.cert:/etc/nginx/ssl/self.cert:ro
+   - ./nginx/ssl/self-ssl.key:/etc/nginx/ssl/self-ssl.key:ro
+   ports:
+   - 8443:443
+   links:
+   - guacamole
+   networks:
+     guacamole_network:
+
+#----------------------------------------      
+# ldap_server
+#----------------------------------------      
+  ldap_server:
+    #profiles: ["ldap"]
+    image: rroemhild/test-openldap
+    container_name: ldap_server
+    hostname: ldap
+    restart: on-failure
+    networks:
+       guacamole_network:
+    labels:
+      org.label-schema.group: "ldap-server"
+    ports:
+      - "389:10389"
+      - "636:10636"
+    volumes:
+      - ./ldap:/ldap:rw
+      
+#----------------------------------------      
+# ldap_proxy
+#----------------------------------------      
+  ldap_proxy:
+    image: trustbuilder/ldap_proxy:1.6.1
+    container_name: ldap_proxy
+    hostname: ldapproxy
+    profiles: ["ldapproxy"]
+    # comment next line for NO users authentications in logs
+    command: sh -c "cd /ldap-proxy-1.6.1/bin && ./run.sh -verbose"
+    environment:
+      TZ: Europe/Paris
+    build:
+      context: .
+    networks:
+      guacamole_network:
+    ports:
+      - 10389:389
+      - 10636:636
+    volumes:
+      - ./conf_ldapproxy:/ldap-proxy-1.6.1/config:rw
+      
+#----------------------------------------      
+# guacamole
+#----------------------------------------      
+  guacamole:
+    container_name: guacamole
+    image: guacamole/guacamole:1.5.4
+    depends_on:
+    - guacd
+    - postgres
+    links:
+    - guacd
+    networks:
+      guacamole_network:
+    volumes:
+      - ./conf_guacamole:/guacamolehome:rw
+    ports:
+    - 8080/tcp
+    restart: always    
+    environment:
+      TZ: Europe/Paris
+      GUACD_HOSTNAME: guacd
+      POSTGRESQL_DATABASE: guacamole_db
+      POSTGRESQL_HOSTNAME: postgres
+      POSTGRESQL_PASSWORD: 'ChooseYourOwnPasswordHere1234'
+      POSTGRESQL_USER: guacamole_user
+      GUACAMOLE_HOME: /guacamolehome
+      EXTENSION_PRIORITY: "*,radius,ldap,openid,saml"
+      LOGBACK_LEVEL: info
+      # --------------
+      # LAB Radius
+      # --------------
+      #RADIUS_HOSTNAME: radius-a.myinwebo.com
+      #RADIUS_AUTH_PORT: 1812	
+      #RADIUS_SHARED_SECRET: <YOUR_SECRET>
+      #RADIUS_AUTH_PROTOCOL: pap
+      #RADIUS_RETRIES: 5
+      #RADIUS_TIMEOUT: 12
+      #RADIUS_TRUST_ALL: true
+      # --------------
+      # LAB SAML
+      # --------------
+      #SAML_IDP_METADATA_URL: <MFA_URL_ISSUER>
+      #SAML_CALLBACK_URL: https://<YOUR_PUBLIC_IP>:8443/
+      #SAML_ENTITY_ID: https://<YOUR_PUBLIC_IP>:8443/
+      #SAML_STRICT: false
+      #SAML_COMPRESS_REQUEST: true
+      #SAML_COMPRESS_RESPONSE: false
+      #SAML_DEBUG: true
+      # --------------
+      # LAB ldap
+      # --------------
+      #LDAP_HOSTNAME: 10.99.1.1
+      #LDAP_PORT: 389
+      #LDAP_ENCRYPTION_METHOD: none
+      #LDAP_MAX_SEARCH_RESULTS: 1000
+      #LDAP_SEARCH_BIND_DN: 'cn=admin,dc=planetexpress,dc=com'
+      #LDAP_SEARCH_BIND_PASSWORD: 'GoodNewsEveryone'
+      #LDAP_USER_BASE_DN: 'ou=people,dc=planetexpress,dc=com'
+      #LDAP_USERNAME_ATTRIBUTE: 'uid'
+      #LDAP_USER_SEARCH_FILTER: (objectClass=*)
+      # --------------
+      # LAB OpenID
+      # --------------
+      #OPENID_AUTHORIZATION_ENDPOINT: https://connect.myinwebo.com/<YOUR_CONNECTOR_ALIAS>/authorize
+      #OPENID_JWKS_ENDPOINT: https://connect.myinwebo.com/<YOUR_CONNECTOR_ALIAS>/jwks
+      #OPENID_ISSUER: https://connect.myinwebo.com/<YOUR_CONNECTOR_ALIAS>/
+      #OPENID_CLIENT_ID: guac
+      #OPENID_REDIRECT_URI: https://<YOUR_PUBLIC_IP>:8443/
+      

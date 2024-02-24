@@ -1,0 +1,14 @@
+dn: cn=Sarah Frechi,ou=people,dc=planetexpress,dc=com
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+cn: Sarah Frechi
+sn: Frechi
+givenName: Sarah
+description: Employee
+mail: youremail@yourdomain.com
+ou: People
+uid: sarah
+userPassword:: e3NzaGF9M3UzcUdCSmFMc2tiUEg0OVJrYlFtUk9HTktFb1lOUXZkU2lOZmc9P
+ Q==

@@ -1,0 +1,13 @@
+dn: cn=guacadmin, ou=people, dc=planetexpress,dc=com
+userPassword:: e1NIQX11WU1RNW5NVUMzUGFXTnBnb0VZVDRDYVZQT289
+displayName: guacadmin
+uid: guacadmin
+givenName: guacadmin
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+description: admin
+sn: guacadmin
+cn: guacadmin
+

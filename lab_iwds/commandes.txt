@@ -1,0 +1,9 @@
+## Demarrer le serveur ldap
+docker-compose up -d
+
+## Arreter le serveur ldap
+docker-compose down
+
+## Vérifier que le serveur ldap est up
+# Cherche le port 389
+ss -lstn 

@@ -1,0 +1,36 @@
+version: "3.7"
+volumes:
+  ldap_server:
+    name: "ldap_server"
+    driver: local
+    #    driver_opts:
+    #      type: none
+    #      o: bind
+    #      device: "ldap"
+services:
+  ldap-server:
+    image: rroemhild/test-openldap
+    container_name: ldap-server
+    restart: on-failure
+    #    networks:
+    #      ldap-network:
+    #        ipv4_address: 10.99.1.2
+    #    command: bash -c "cd /ldap; ./init_ldap.sh"
+    labels:
+      org.label-schema.group: "ldap-server"
+    ports:
+      - "389:10389"
+      - "636:636"
+    volumes:
+      - ldap_server:/ldap
+        #networks:
+        #  ldap-network:
+        #    name: ldap-network
+        #    driver: bridge
+        #    driver_opts:
+        #      com.docker.network.enable_ipv6: "false"
+        #      com.docker.network.driver.mtu: 1450
+        #    ipam:
+        #      driver: default
+        #      config:
+        #        - subnet: 10.99.1.0/24

@@ -1,0 +1,5 @@
+dn: cn=inWebo Users,ou=people,dc=planetexpress,dc=com
+changetype: modify
+add: member
+member: cn=Robert de Laconta,ou=people,dc=planetexpress,dc=com
+member: cn=Sarah Frechi,ou=people,dc=planetexpress,dc=com

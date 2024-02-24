@@ -1,0 +1,12 @@
+dn: cn=Sarah Frechi,ou=people,dc=planetexpress,dc=com
+changetype: modrdn
+newrdn: cn=Sarah de Laconta
+deleteoldrdn: 1
+
+dn: cn=Sarah de Laconta,ou=people,dc=planetexpress,dc=com
+changetype: modify
+replace: sn
+sn: De Laconta
+#-
+#replace: uid
+#uid: sdelaconta
