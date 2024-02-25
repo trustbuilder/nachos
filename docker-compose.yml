@@ -99,7 +99,7 @@ services:
 # ldap_server
 #----------------------------------------      
   ldap_server:
-    #profiles: ["ldap"]
+    profiles: ["ldapproxy"]
     image: rroemhild/test-openldap
     container_name: ldap_server
     hostname: ldap

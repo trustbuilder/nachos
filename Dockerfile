@@ -1,6 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM eclipse-temurin:11-jre-
-jammy
+FROM eclipse-temurin:11-jre-jammy
 
 # LABEL about the image
 LABEL maintainer="presales@trustbuilder.com"
@@ -35,6 +34,9 @@ RUN	ln -s /dev/stdout /ldap-proxy-1.6.1/logs/iw_ldap_proxy.log
 EXPOSE 389 636
 # internal folder to expose
 VOLUME /ldap-proxy-1.6.1/config
+
+# TODO
+#HEALTHCHECK 
 
 # Launch ldap-proxy
 CMD ["sh", "-c", "cd /ldap-proxy-1.6.1/bin && ./run.sh"]
