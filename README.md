@@ -1,8 +1,9 @@
 # Nachos
-MFA Training Labs
+TrustBuilder Training Labs
+v2.0 - 2024.03 - BRO
 
 ## Prerequisites
-You need a working **docker** installation and **docker-compose** running on your machine.
+You need a working **docker** installation and **docker compose** running on your machine.
 
 ## Quick start
 Clone the GIT repository and start Labs:
@@ -10,18 +11,12 @@ Clone the GIT repository and start Labs:
 ~~~bash
 git clone https://github.com/trustbuilder/nachos.git
 cd nachos
-docker-compose up -d
+docker compose up -d
 ~~~
 
-For starting labs with ldap and ldapproxy support, use the profile *ldapproxy*
-
-~~~bash
-docker-compose --profile ldapproxy up -d
-~~~
-
-by default the guacamole frontend will try to authenticate the user with configured extensions and the priority oreder defined by the following line in the *guacamole* service :
+by default the guacamole frontend will try to authenticate the user with configured extensions and the priority oreder defined by the following line in the *x-config* section :
 ~~~python
-      EXTENSION_PRIORITY: "*,radius,ldap,openid,saml"
+      EXTENSION_PRIORITY: "postgresql,ldap,radius"
 ~~~
 
 If you wish to control which authentication method is allowed, change this line. For example for only Radius :
@@ -29,9 +24,8 @@ If you wish to control which authentication method is allowed, change this line.
       EXTENSION_PRIORITY: "radius"
 ~~~
 
-
 ## Details
-To understand some details have a look at parts of the `docker-compose.yml` file:
+To understand some details have a look at parts of the `compose.yml` file:
 
 ### Networking
 The following part of docker-compose.yml will create a network with name `guacamole_network` in mode `bridged`.
@@ -47,7 +41,7 @@ networks:
 
 ### Services
 #### guacd
-The following part of docker-compose.yml will create the guacd service. guacd is the heart of Guacamole which dynamically loads support for remote desktop protocols (called "client plugins") and connects them to remote desktops based on instructions received from the web application. The container will be called `guacd_compose` based on the docker image `guacamole/guacd` connected to our previously created network `guacnetwork_compose`. Additionally we map the 2 local folders `./drive` and `./record` into the container. We can use them later to map user drives and store recordings of sessions.
+The following part of compose.yml will create the guacd service. guacd is the heart of Guacamole which dynamically loads support for remote desktop protocols (called "client plugins") and connects them to remote desktops based on instructions received from the web application. The container will be called `guacd_compose` based on the docker image `guacamole/guacd` connected to our previously created network `guacnetwork_compose`. Additionally we map the 2 local folders `./drive` and `./record` into the container. We can use them later to map user drives and store recordings of sessions.
 
 ~~~python
 ...
@@ -61,14 +55,11 @@ services:
     networks:
       guacamole_network:
     restart: always
-    volumes:
-    - ./drive:/drive:rw
-    - ./record:/record:rw
 ...
 ~~~
 
 #### PostgreSQL
-The following part of docker-compose.yml will create an instance of PostgreSQL using the official docker image. This image is highly configurable using environment variables. It will for example initialize a database if an initialization script is found in the folder `/docker-entrypoint-initdb.d` within the image. Since we map the local folder `./init` inside the container as `docker-entrypoint-initdb.d` we can initialize the database for guacamole using our own script (`./init/initdb.sql`). You can read more about the details of the official postgres image [here](http://).
+The following part of compose.yml will create an instance of PostgreSQL using the official docker image. This image is highly configurable using environment variables. It will for example initialize a database if an initialization script is found in the folder `/docker-entrypoint-initdb.d` within the image. Since we map the local folder `./init` inside the container as `docker-entrypoint-initdb.d` we can initialize the database for guacamole using our own script (`./init/initdb.sql`). You can read more about the details of the official postgres image [here](http://).
 
 ~~~python
 ...
@@ -88,8 +79,8 @@ The following part of docker-compose.yml will create an instance of PostgreSQL u
       guacamole_network:
     restart: always
     volumes:
-    - ./init:/docker-entrypoint-initdb.d:z
-    - ./data:/var/lib/postgresql/data:Z
+    - ./.hide/init:/docker-entrypoint-initdb.d:z
+    - ./.hide/data:/var/lib/postgresql/data:Z
     ports:
     - 5432:5432
 ...
@@ -108,9 +99,9 @@ The following part of docker-compose.yml will create an instance of nginx that m
    restart: always
    image: nginx
    volumes:
-   - ./nginx/templates:/etc/nginx/templates:ro
-   - ./nginx/ssl/self.cert:/etc/nginx/ssl/self.cert:ro
-   - ./nginx/ssl/self-ssl.key:/etc/nginx/ssl/self-ssl.key:ro
+   - ./.hide/nginx/templates:/etc/nginx/templates:ro
+   - ./.hide/nginx/ssl/self.cert:/etc/nginx/ssl/self.cert:ro
+   - ./.hide/nginx/ssl/self-ssl.key:/etc/nginx/ssl/self-ssl.key:ro
    ports:
    - 8443:443
    links:
@@ -134,7 +125,6 @@ docker compose --profile ldapproxy up -d
 # ldap_server
 #----------------------------------------      
   ldap_server:
-    profiles: ["ldapproxy"]
     image: rroemhild/test-openldap
     container_name: ldap_server
     hostname: ldap
@@ -147,7 +137,7 @@ docker compose --profile ldapproxy up -d
       - "389:10389"
       - "636:10636"
     volumes:
-      - ./ldap:/ldap:rw
+      - ./.hide/ldap:/ldap:rw
 ...
 ~~~
 #### ldap proxy
@@ -169,7 +159,6 @@ NB : This service will be build at the first run through the provided *Dockerfil
     image: trustbuilder/ldap_proxy:1.6.1
     container_name: ldap_proxy
     hostname: ldapproxy
-    profiles: ["ldapproxy"]
     # comment next line for NO users authentications in logs
     command: sh -c "cd /ldap-proxy-1.6.1/bin && ./run.sh -verbose"
     environment:
@@ -208,7 +197,7 @@ Uncomments the relevant part and provide your settings
     networks:
       guacamole_network:
     volumes:
-      - ./conf_guacamole:/guacamolehome:rw
+      - ./.hide/guacamole:/guacamolehome:rw
     ports:
     - 8080/tcp
     restart: always 
@@ -216,9 +205,8 @@ Uncomments the relevant part and provide your settings
 ~~~
 
 
-
 ## prepare.sh
-`prepare.sh` is a small script that creates `./init/initdb.sql` by downloading the docker image `guacamole/guacamole` and start it like this:
+`cd .hide && prepare.sh` is a small script that creates `./init/initdb.sql` by downloading the docker image `guacamole/guacamole` and start it like this:
 
 ~~~bash
 docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgresql > ./init/initdb.sql
@@ -232,7 +220,7 @@ by nginx for https.
 You can run it to renew ssh key and initdb which are already included. Use 'reset.sh' before
 
 ## reset.sh
-To reset everything to the beginning, just run `./reset.sh`.
+To reset everything to the beginning, just run `cd .hide && ./reset.sh`.
 
 
 **Disclaimer**

@@ -3,3 +3,5 @@ drive/
 record/
 *.p12
 *.ok
+*.old
+custom
